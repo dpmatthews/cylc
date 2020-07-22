@@ -58,12 +58,27 @@
 # * Note that $CYLC_ROOT_HOME can be overridden in the environment too.
 
 CYLC_HOME_ROOT=${CYLC_HOME_ROOT:-/opt} # !!! EDIT ME !!!
+CYLC_HOME_ROOT_ALT=${CYLC_HOME_ROOT_ALT:-/opt/miniconda3/envs} # !!! EDIT ME !!!
 
 if [[ -z ${CYLC_HOME:-} ]]; then
-    if [[ -n ${CYLC_VERSION:-} && -d $CYLC_HOME_ROOT/cylc-$CYLC_VERSION ]]; then
-        CYLC_HOME=$CYLC_HOME_ROOT/cylc-$CYLC_VERSION
+    CYLC_HOME=$CYLC_HOME_ROOT/cylc
+    if [[ -n ${CYLC_VERSION:-} ]]; then
+        # Look for matching version in either of the possible root locations
+        if [[ -d $CYLC_HOME_ROOT/cylc-$CYLC_VERSION ]]; then
+            CYLC_HOME=$CYLC_HOME_ROOT/cylc-$CYLC_VERSION
+        if [[ -d $CYLC_HOME_ROOT_ALT/cylc-$CYLC_VERSION ]]; then
+            CYLC_HOME=$CYLC_HOME_ROOT_ALT/cylc-$CYLC_VERSION
+        fi
+    fi
+fi
+if [[ -d "${CYLC_HOME}/conda-meta" ]]; then
+    if [[ -f "${CYLC_HOME}/bin/activate" ]]; then
+        # A conda pack installation
+        . ${CYLC_HOME}/bin/activate || exit 1
     else
-        CYLC_HOME=$CYLC_HOME_ROOT/cylc
+        # A normal conda environment
+        . $(dirname ${CYLC_HOME})/etc/profile.d/conda.sh
+        conda activate "$(basename ${CYLC_HOME})" || exit 1
     fi
 fi
 exec "$CYLC_HOME/bin/$(basename "$0")" "$@"
